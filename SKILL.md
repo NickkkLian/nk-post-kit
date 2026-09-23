@@ -5,7 +5,7 @@ license: MIT
 compatibility: termgif.py and preview_cards.py need Pillow (pip install pillow); termgif needs a monospace TrueType font and preview_cards needs a font with Chinese glyphs (macOS has one; elsewhere pass --cjk-font). postkit_check.py is stdlib only.
 metadata:
   provenance: own practice (2026-09) writing launch material for a set of open-source skills; see Provenance
-  version: 0.2.0
+  version: 0.2.1
 ---
 # Post kit
 
@@ -47,7 +47,9 @@ repository and its evidence, and a gate refuses the drafts that drift from it.
    draws the root post and the reply with their character counts, the cover line at cover size, and the body
    paginated over 3:4 cards. Read them. A file cannot show that the cover line is too long to read at a glance,
    that a paragraph wraps into a wall, or that the last line falls off the card; the picture can. Neither
-   platform renders Markdown, so the cards drop `**` and `##` — what you see is what a reader gets.
+   platform renders Markdown, so the cards drop `**` and `##` — what you see is what a reader gets. The cover
+   card shows its character count for checking; add `--for-posting` to draw the cards you will actually post,
+   without it.
 6. **Gate the kit**: `python3 ${CLAUDE_SKILL_DIR}/scripts/postkit_check.py . --private-words ~/.config/post-kit/private-words.txt`
    (P1 all pieces present · P2 X length/hashtags/link · P3 word count · P4 Chinese cover/body/contacts ·
    P5 job-hunting words, superlatives, local paths, your private words · P6 the run exited 0 · P7 video length ·

@@ -5,7 +5,9 @@ file cannot show: how much of the 280 characters the post really uses, and wheth
 when it is drawn at the size a phone shows it.
 
     python3 preview_cards.py <project-dir> [--out DIR] [--scheme dark|light] [--scale 1|2]
-                             [--font PATH] [--cjk-font PATH]
+                             [--font PATH] [--cjk-font PATH] [--for-posting]
+        --for-posting: leave the character count off the cover card — it is there for checking, and an
+        image that is going to be posted should carry the cover line and nothing else
     python3 preview_cards.py --selftest
 
 Reads <project-dir>/post-kit/x-post.md and <project-dir>/post-kit/xiaohongshu.md, and writes into
@@ -25,6 +27,7 @@ Requires Pillow and a font that has the glyphs — on macOS the defaults are fou
 import os, re, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
 
+sys.dont_write_bytecode = True   # importing postkit_check would otherwise leave a __pycache__ beside a shipped script
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from postkit_check import cover_of   # one definition of what the cover line is; the two ship together
 
@@ -257,7 +260,7 @@ def render_thread(pen, root, reply, out_path):
     return img
 
 
-def render_cover(pen, cover, out_path):
+def render_cover(pen, cover, out_path, posting=False):
     W, H, PAD, SIZE = 900, 1200, 72, 66
     img, d = new_card(pen, W, H)
     lines = pen.wrap(plain_text(cover), SIZE, (W - PAD * 2) * pen.scale)
@@ -266,8 +269,9 @@ def render_cover(pen, cover, out_path):
     for line in lines:
         pen.draw(d, (PAD * pen.scale, y), line, SIZE, pen.red if over else pen.fg)
         y += SIZE * 1.34 * pen.scale
-    mark = f"{len(cover)} / {COVER_LIMIT}"
-    pen.draw(d, (PAD * pen.scale, (H - PAD) * pen.scale), mark, 20, pen.red if over else pen.dim)
+    if not posting:   # the count is for the person checking the cover; it does not belong on the image that is posted
+        mark = f"{len(cover)} / {COVER_LIMIT}"
+        pen.draw(d, (PAD * pen.scale, (H - PAD) * pen.scale), mark, 20, pen.red if over else pen.dim)
     img.save(out_path)
     return img
 
@@ -315,7 +319,7 @@ def render_body(pen, lines, out_dir, stem="xhs-body"):
 
 # ---------------------------------------------------------------- driver
 
-def run(project, out=None, scheme="dark", scale=1, font=None, cjk_font=None, quiet=False):
+def run(project, out=None, scheme="dark", scale=1, font=None, cjk_font=None, quiet=False, posting=False):
     kit = os.path.join(project, "post-kit") if os.path.isdir(os.path.join(project, "post-kit")) else project
     out = out or os.path.join(kit, "preview")
     os.makedirs(out, exist_ok=True)
@@ -355,7 +359,7 @@ def run(project, out=None, scheme="dark", scale=1, font=None, cjk_font=None, qui
             if gaps:
                 findings.append("xiaohongshu.md: no glyph for " + " ".join(gaps) + " on the cover")
             p = os.path.join(out, "xhs-cover.png")
-            render_cover(pen, cover, p)
+            render_cover(pen, cover, p, posting=posting)
             written.append(p)
         lines = body_lines(body)
         if lines:
@@ -499,6 +503,12 @@ def selftest():
         check("a hashtag at the start of a line keeps its #", tags == ["#AI\u5de5\u5177 #ClaudeCode"], str(tags))
         check("Markdown markers are not drawn", not any("*" in l or "`" in l or "#" in l for l in kept), str(kept))
 
+        # 10 · the cover count is for checking; the posting cover does not carry it
+        run(os.path.join(tmp, "a"), out=os.path.join(tmp, "post"), posting=True, quiet=True)
+        corner = (72, 1200 - 72 - 4, 300, 1200 - 40)
+        check("the checking cover carries its count", ink(os.path.join(tmp, "a", "post-kit", "preview", "xhs-cover.png"), corner) > 1, "")
+        check("the posting cover does not", ink(os.path.join(tmp, "post", "xhs-cover.png"), corner) <= 1, "")
+
         # 9 · light scheme renders too, and is not the dark one
         run(os.path.join(tmp, "a"), out=os.path.join(tmp, "light"), scheme="light", quiet=True)
         pair = [os.path.join(tmp, "light", "xhs-cover.png"), os.path.join(tmp, "a", "post-kit", "preview", "xhs-cover.png")]
@@ -517,7 +527,7 @@ def main(argv):
     if "--selftest" in argv:
         return selftest()
     args, opts = [], {}
-    it = iter(argv)
+    it = iter([a for a in argv if a != "--for-posting"])   # the one flag that takes no value
     for a in it:
         if a.startswith("--"):
             opts[a[2:]] = next(it, "")
@@ -526,7 +536,8 @@ def main(argv):
     if len(args) != 1:
         return print(__doc__.strip()) or 2
     findings, _ = run(args[0], out=opts.get("out"), scheme=opts.get("scheme", "dark"),
-                      scale=int(opts.get("scale", 1)), font=opts.get("font"), cjk_font=opts.get("cjk-font"))
+                      scale=int(opts.get("scale", 1)), font=opts.get("font"), cjk_font=opts.get("cjk-font"),
+                      posting="--for-posting" in argv)
     return 1 if findings else 0
 
 
