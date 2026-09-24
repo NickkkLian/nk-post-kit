@@ -20,6 +20,11 @@ The leading block of `#` lines in a source file is the kit's own note to the per
 post; it is stripped, exactly as the gate strips it. Nothing is truncated: text over its budget is drawn in
 full with the overrun marked, so the person can see how much has to go.
 
+The cards use the v4 "Monet" colours (dark: the dusk band; light: the water-lily canvas). Latin text, labels and
+numbers are drawn with the fonts in ../assets/fonts (Inter, Space Mono, and Fraunces for Latin in the cover line),
+so they look the same on every machine; Chinese comes from the machine: a sans for the body, a bold serif for the
+cover line when one is installed (Songti SC on macOS), the body face when not.
+
 Exit 0 clean · 1 findings (the cards are still written) · 2 usage, or a font that cannot draw the text.
 Requires Pillow and a font that has the glyphs — on macOS the defaults are found automatically; elsewhere pass
 --cjk-font (Noto Sans CJK, Source Han Sans, Microsoft YaHei) if the search finds nothing.
@@ -31,17 +36,31 @@ sys.dont_write_bytecode = True   # importing postkit_check would otherwise leave
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from postkit_check import cover_of   # one definition of what the cover line is; the two ship together
 
+FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "assets", "fonts")   # see SOURCES.md there
+
+# The v4 "Monet" colours: dark is the dusk band, light is the water-lily canvas. Every text colour clears 4.5:1 on
+# its card and the accent bar clears 3:1; the selftest measures both.
 SCHEMES = {                                             # bg, fg, dim, rule, accent, red
-    "dark":  ((17, 19, 24), (233, 236, 242), (139, 148, 164), (38, 43, 53), (122, 198, 255), (255, 107, 107)),
-    "light": ((252, 252, 253), (23, 26, 33), (104, 113, 128), (223, 227, 234), (16, 96, 160), (183, 28, 28)),
+    "dark":  ((0x16, 0x34, 0x37), (0xec, 0xe5, 0xde), (0xaf, 0xa6, 0x9d), (0x39, 0x54, 0x56), (0xf8, 0xa1, 0xb3), (0xeb, 0x8b, 0x75)),
+    "light": ((0xf7, 0xe9, 0xe8), (0x1d, 0x1b, 0x24), (0x60, 0x5e, 0x67), (0xd6, 0xd4, 0xdf), (0x05, 0x33, 0x33), (0xa9, 0x39, 0x20)),
 }
-UI_FONTS = ["/System/Library/Fonts/SFNS.ttf", "/System/Library/Fonts/Helvetica.ttc",
+# A font entry is a path, or (path, index) for a collection whose first face is the wrong one.
+UI_FONTS = [os.path.join(FONT_DIR, "Inter-latin-var.woff"), "/System/Library/Fonts/SFNS.ttf", "/System/Library/Fonts/Helvetica.ttc",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/segoeui.ttf"]
-CJK_FONTS = ["/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc",
-             "/System/Library/Fonts/STHeiti Light.ttc",
-             "/System/Library/Fonts/Hiragino Sans GB.ttc", "/System/Library/Fonts/Supplemental/Songti.ttc",
+MONO_FONTS = [os.path.join(FONT_DIR, "SpaceMono-latin-400.woff"), "/System/Library/Fonts/Menlo.ttc",
+              "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/consola.ttf"]
+DISPLAY_FONTS = [os.path.join(FONT_DIR, "Fraunces-latin-var.woff")]      # Latin in the cover line
+CJK_FONTS = ["/System/Library/Fonts/PingFang.ttc", ("/System/Library/Fonts/Hiragino Sans GB.ttc", 0),
+             ("/System/Library/Fonts/STHeiti Medium.ttc", 1), ("/System/Library/Fonts/STHeiti Light.ttc", 1),
+             "/System/Library/Fonts/Supplemental/Songti.ttc",
              "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
              "/usr/share/fonts/truetype/arphic/uming.ttc", "C:/Windows/Fonts/msyh.ttc"]
+# The cover line's Chinese: a bold serif when the machine has one, the body face when it has none.
+CJK_DISPLAY_FONTS = [("/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc", 2),
+                     "/usr/share/fonts/opentype/noto/NotoSerifCJKsc-Bold.otf",
+                     os.path.expanduser("~/Library/Fonts/NotoSerifSC-Bold.otf"),
+                     ("/System/Library/Fonts/Supplemental/Songti.ttc", 1),   # face 1 is Songti SC Bold
+                     "C:/Windows/Fonts/simsun.ttc"]
 PROBE = "我一字"            # if the CJK font cannot draw these, it is the wrong font and nothing is rendered
 PUA = "\ue123"             # a private-use code point no real font fills: its glyph IS the .notdef box
 CJK = re.compile(r"[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef\u3000-\u303f]")
@@ -109,15 +128,26 @@ def body_lines(body):
 # ---------------------------------------------------------------- fonts
 
 def load_first(paths, size, label):
-    for p in paths:
+    for entry in paths:
+        p, indexes = (entry[0], (entry[1],)) if isinstance(entry, tuple) else (entry, (0, 1))
         if os.path.exists(p):
-            for index in (0, 1):
+            for index in indexes:
                 try:
                     return ImageFont.truetype(p, size, index=index), p
                 except OSError:
                     continue
     raise SystemExit(f"preview_cards: no {label} font found. Pass one with --font / --cjk-font. Looked in:\n  "
-                     + "\n  ".join(paths))
+                     + "\n  ".join(e[0] if isinstance(e, tuple) else e for e in paths))
+
+
+def contrast(a, b):
+    """WCAG 2 contrast ratio of two sRGB colours."""
+    def lum(c):
+        v = [x / 255 for x in c]
+        v = [x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in v]
+        return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
 
 
 def missing(font, ch):
@@ -137,52 +167,71 @@ def missing(font, ch):
 
 class Pen:
     """Draws mixed Latin and Chinese by picking a font per character, which is also how it measures: the width
-    the card is laid out with is the width the glyphs actually take."""
+    the card is laid out with is the width the glyphs actually take. Three roles: body text ("ui"), labels and
+    counts ("mono"), and the cover line ("display"). A character a role's face lacks is drawn with the body
+    face, and Chinese with the Chinese face of that role."""
+
+    CHAIN = {"ui": ("ui",), "mono": ("mono", "ui"), "display": ("display", "ui")}
 
     def __init__(self, ui_path, cjk_path, scheme, scale):
         self.ui_path, self.cjk_path, self.scale = ui_path, cjk_path, scale
         self.bg, self.fg, self.dim, self.rule, self.accent, self.red = SCHEMES[scheme]
-        self._cache = {}
-        cjk, self.cjk_file = self.font(28, True)
+        self._cache, self._picked = {}, {}
+        cjk, self.cjk_file = self.font(28, "cjk")
         bad = [c for c in PROBE if missing(cjk, c)]
         if bad:
             raise SystemExit(f"preview_cards: the font used for Chinese cannot draw {''.join(bad)} "
                              f"({self.cjk_file}). It would render empty boxes, so nothing was written. "
                              f"Pass a CJK font with --cjk-font.")
-        _, self.ui_file = self.font(28, False)
+        _, self.ui_file = self.font(28, "ui")
+        _, self.mono_file = self.font(28, "mono")
+        _, self.display_file = self.font(28, "display")
+        _, self.cjk_display_file = self.font(28, "cjk-display")
 
-    def font(self, size, cjk):
-        key = (size, cjk)
+    def font(self, size, role):
+        key = (size, role)
         if key not in self._cache:
-            paths = ([self.cjk_path] if self.cjk_path else []) + CJK_FONTS if cjk else \
-                    ([self.ui_path] if self.ui_path else []) + UI_FONTS
-            self._cache[key] = load_first(paths, int(size * self.scale), "CJK" if cjk else "UI")
+            own_cjk = [self.cjk_path] if self.cjk_path else []   # a --cjk-font the person chose wins, cover included
+            paths = {"ui": ([self.ui_path] if self.ui_path else []) + UI_FONTS,
+                     "mono": MONO_FONTS + UI_FONTS,
+                     "display": DISPLAY_FONTS + UI_FONTS,
+                     "cjk": own_cjk + CJK_FONTS,
+                     "cjk-display": own_cjk + CJK_DISPLAY_FONTS + CJK_FONTS}[role]
+            f, p = load_first(paths, int(size * self.scale), "CJK" if role.startswith("cjk") else role)
+            if role == "cjk-display" and any(missing(f, c) for c in PROBE):
+                f, p = self.font(size, "cjk")      # a serif that cannot draw Chinese is no use for the cover
+            if os.path.basename(p) == "Fraunces-latin-var.woff":
+                f.set_variation_by_axes([700])     # the file's default instance is 900; the cover is set in bold
+            self._cache[key] = (f, p)
         return self._cache[key]
 
-    def pick(self, ch, size):
-        ui, _ = self.font(size, False)
-        if CJK.match(ch) or missing(ui, ch):
-            return self.font(size, True)[0]
-        return ui
+    def pick(self, ch, size, role="ui"):
+        key = (ch, size, role)
+        if key not in self._picked:
+            cjk = "cjk-display" if role == "display" else "cjk"
+            found = None if CJK.match(ch) else next(
+                (f for f in (self.font(size, r)[0] for r in self.CHAIN[role]) if not missing(f, ch)), None)
+            self._picked[key] = found if found is not None else self.font(size, cjk)[0]
+        return self._picked[key]
 
-    def width(self, text, size):
-        return sum(self.pick(c, size).getlength(c) for c in text)
+    def width(self, text, size, role="ui"):
+        return sum(self.pick(c, size, role).getlength(c) for c in text)
 
-    def gaps(self, text):
+    def gaps(self, text, role="ui"):
         """Characters no available font can draw — emoji, mostly. Reported, and drawn as an empty box."""
         seen, out = set(), []
         for ch in text:
             if ch in seen or not ch.strip():
                 continue
             seen.add(ch)
-            if missing(self.pick(ch, 28), ch):
+            if missing(self.pick(ch, 28, role), ch):
                 out.append(ch)
         return out
 
-    def draw(self, d, xy, text, size, fill):
+    def draw(self, d, xy, text, size, fill, role="ui"):
         x, y = xy
         for ch in text:
-            f = self.pick(ch, size)
+            f = self.pick(ch, size, role)
             if missing(f, ch):
                 w, h = f.getlength(ch) or size * self.scale * 0.9, size * self.scale * 0.72
                 d.rectangle([x + 1, y + size * self.scale * 0.22, x + w - 2, y + size * self.scale * 0.94],
@@ -193,20 +242,20 @@ class Pen:
             x += f.getlength(ch)
         return x
 
-    def wrap(self, text, size, width):
+    def wrap(self, text, size, width, role="ui"):
         """Greedy wrap. A Chinese line may break before any character; a Latin word may not be split, so a run
         of Latin moves to the next line whole."""
         lines, cur = [], ""
         for token in re.findall(r"[^\s]+|\s+", text):
-            if CJK.search(token) or self.width(token, size) > width:
+            if CJK.search(token) or self.width(token, size, role) > width:
                 for ch in token:
-                    if self.width(cur + ch, size) > width and cur.strip():
+                    if self.width(cur + ch, size, role) > width and cur.strip():
                         lines.append(cur.rstrip())
                         cur = "" if ch.isspace() else ch
                     else:
                         cur += ch
                 continue
-            if self.width(cur + token, size) > width and cur.strip():
+            if self.width(cur + token, size, role) > width and cur.strip():
                 lines.append(cur.rstrip())
                 cur = "" if token.isspace() else token
             else:
@@ -246,14 +295,14 @@ def render_thread(pen, root, reply, out_path):
                     outline=pen.rule, width=max(1, int(pen.scale)))
         d.rectangle([x0 - 14 * pen.scale, y - 10 * pen.scale, x0 - 11 * pen.scale, y + box_h],
                     fill=pen.red if over else pen.accent)
-        pen.draw(d, (x0, y), label.upper(), 14, pen.dim)
+        pen.draw(d, (x0, y), label.upper(), 14, pen.dim, role="mono")
         y += 34 * pen.scale
         for line in lines:
             pen.draw(d, (x0, y), line, SIZE, pen.fg)
             y += LEAD * pen.scale
         count = f"{len(text)} / {X_LIMIT}"
-        pen.draw(d, ((W - PAD) * pen.scale - pen.width(count, 14), y + 4 * pen.scale),
-                 count, 14, pen.red if over else pen.dim)
+        pen.draw(d, ((W - PAD) * pen.scale - pen.width(count, 14, "mono"), y + 4 * pen.scale),
+                 count, 14, pen.red if over else pen.dim, role="mono")
         y += (30 + GAP) * pen.scale
     img = img.crop((0, 0, img.width, int(y - (GAP - PAD) * pen.scale)))
     img.save(out_path)
@@ -263,15 +312,15 @@ def render_thread(pen, root, reply, out_path):
 def render_cover(pen, cover, out_path, posting=False):
     W, H, PAD, SIZE = 900, 1200, 72, 66
     img, d = new_card(pen, W, H)
-    lines = pen.wrap(plain_text(cover), SIZE, (W - PAD * 2) * pen.scale)
+    lines = pen.wrap(plain_text(cover), SIZE, (W - PAD * 2) * pen.scale, role="display")
     y = (H * pen.scale - len(lines) * SIZE * 1.34 * pen.scale) / 2
     over = len(cover) > COVER_LIMIT
     for line in lines:
-        pen.draw(d, (PAD * pen.scale, y), line, SIZE, pen.red if over else pen.fg)
+        pen.draw(d, (PAD * pen.scale, y), line, SIZE, pen.red if over else pen.fg, role="display")
         y += SIZE * 1.34 * pen.scale
     if not posting:   # the count is for the person checking the cover; it does not belong on the image that is posted
         mark = f"{len(cover)} / {COVER_LIMIT}"
-        pen.draw(d, (PAD * pen.scale, (H - PAD) * pen.scale), mark, 20, pen.red if over else pen.dim)
+        pen.draw(d, (PAD * pen.scale, (H - PAD) * pen.scale), mark, 20, pen.red if over else pen.dim, role="mono")
     img.save(out_path)
     return img
 
@@ -310,7 +359,7 @@ def render_body(pen, lines, out_dir, stem="xhs-body"):
             pen.draw(d, (PAD * pen.scale, y), line, SIZE, pen.fg)
             y += LEAD * pen.scale
         mark = f"{n} / {len(pages)}"
-        pen.draw(d, ((W - PAD) * pen.scale - pen.width(mark, 20), (H - PAD) * pen.scale), mark, 20, pen.dim)
+        pen.draw(d, ((W - PAD) * pen.scale - pen.width(mark, 20, "mono"), (H - PAD) * pen.scale), mark, 20, pen.dim, role="mono")
         p = os.path.join(out_dir, f"{stem}-{n}.png")
         img.save(p)
         paths.append(p)
@@ -355,7 +404,7 @@ def run(project, out=None, scheme="dark", scale=1, font=None, cjk_font=None, qui
         else:
             if len(cover) > COVER_LIMIT:
                 findings.append(f"xiaohongshu.md: the cover line is {len(cover)} characters, over {COVER_LIMIT}")
-            gaps = pen.gaps(cover)
+            gaps = pen.gaps(cover, role="display")
             if gaps:
                 findings.append("xiaohongshu.md: no glyph for " + " ".join(gaps) + " on the cover")
             p = os.path.join(out, "xhs-cover.png")
@@ -367,7 +416,9 @@ def run(project, out=None, scheme="dark", scale=1, font=None, cjk_font=None, qui
             written += paths
 
     if not quiet:
-        print(f"fonts: {pen.ui_file} · {pen.cjk_file}")
+        name = os.path.basename
+        print(f"fonts: body {name(pen.ui_file)} + {name(pen.cjk_file)} · labels {name(pen.mono_file)} · "
+              f"cover {name(pen.display_file)} + {name(pen.cjk_display_file)}")
         for p in written:
             with Image.open(p) as im:
                 print(f"  wrote {os.path.relpath(p, project) if p.startswith(project) else p}  {im.width}x{im.height}")
@@ -517,6 +568,50 @@ def selftest():
         else:
             with Image.open(pair[0]) as a, Image.open(pair[1]) as b:
                 check("light and dark cards differ", a.getpixel((5, 5)) != b.getpixel((5, 5)), f"{a.getpixel((5, 5))} vs {b.getpixel((5, 5))}")
+                # written out here, not read from SCHEMES: a check that takes its answer from the table it checks
+                # agrees with any change to that table
+                check("the covers sit on the v4 canvas and dusk band",
+                      a.getpixel((5, 5)) == (0xf7, 0xe9, 0xe8) and b.getpixel((5, 5)) == (0x16, 0x34, 0x37),
+                      f"{a.getpixel((5, 5))} / {b.getpixel((5, 5))}")
+
+        # 11 · every text colour clears 4.5:1 on its card, the accent bar 3:1
+        for name, (bg, fg, dim, rule, accent, red) in sorted(SCHEMES.items()):
+            worst = min(contrast(c, bg) for c in (fg, dim, red))
+            check(f"{name} cards: text, muted text and over-budget text clear 4.5:1", worst >= 4.5, f"{worst:.2f}")
+            check(f"{name} cards: the accent bar clears 3:1", contrast(accent, bg) >= 3, f"{contrast(accent, bg):.2f}")
+
+        # 12 · the faces that ship with the skill are the ones that draw, and gaps in them fall through
+        pen = Pen(None, None, "dark", 1)
+        base = os.path.basename
+        check("body text is drawn in the shipped Inter", base(pen.ui_file) == "Inter-latin-var.woff", pen.ui_file)
+        check("labels and counts are drawn in the shipped Space Mono", base(pen.mono_file) == "SpaceMono-latin-400.woff", pen.mono_file)
+        default = ImageFont.truetype(pen.display_file, 66).getlength("Hamburg")
+        check("Latin in the cover line is Fraunces at weight 700, not the file's 900",
+              base(pen.display_file) == "Fraunces-latin-var.woff" and pen.font(66, "display")[0].getlength("Hamburg") != default,
+              f"{pen.display_file}, width {pen.font(66, 'display')[0].getlength('Hamburg'):.0f} vs {default:.0f} at 900")
+        arrow = pen.pick("→", 20, "mono")        # Space Mono's Latin subset has no arrow
+        check("a character the label face lacks is drawn by the next face", not missing(arrow, "→"), "drawn as a box")
+        serif = next((e[0] if isinstance(e, tuple) else e for e in CJK_DISPLAY_FONTS
+                      if os.path.exists(e[0] if isinstance(e, tuple) else e)), None)
+        if serif is None:
+            print("  SKIP  the cover's Chinese is a bold serif  (this machine has none of CJK_DISPLAY_FONTS)")
+        else:
+            one, other = pen.pick("\u5c01", 66, "display"), pen.pick("\u5c01", 66)
+            check("the cover's Chinese is the machine's bold serif, not the body face",
+                  pen.cjk_display_file == serif and bytes(one.getmask("\u5c01")) != bytes(other.getmask("\u5c01")),
+                  f"cover {pen.cjk_display_file} · body {pen.cjk_file}")
+        chosen = next((p for p in (e[0] if isinstance(e, tuple) else e for e in CJK_FONTS) if os.path.exists(p)), None)
+        if chosen:
+            own = Pen(None, chosen, "dark", 1)
+            check("a --cjk-font the person passes draws the cover too", own.cjk_display_file == chosen, own.cjk_display_file)
+        saved = CJK_DISPLAY_FONTS[:]
+        CJK_DISPLAY_FONTS[:] = [os.path.join(FONT_DIR, "SpaceMono-latin-400.woff")]   # a "serif" with no Chinese in it
+        try:
+            latin = Pen(None, None, "dark", 1)
+            check("a cover face that cannot draw Chinese gives way to the body face",
+                  latin.cjk_display_file == latin.cjk_file, f"cover {latin.cjk_display_file} · body {latin.cjk_file}")
+        finally:
+            CJK_DISPLAY_FONTS[:] = saved
 
     bad = sum(1 for _, g, _ in ok if not g)
     print(f"selftest: {len(ok) - bad}/{len(ok)} passed")
