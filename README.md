@@ -105,7 +105,8 @@ python3 scripts/preview_cards.py --selftest
 python3 scripts/termgif.py --selftest
 ```
 
-Standard library only, Python 3.9+. Before publishing, the guarded lines of each script were
+Python 3.9+. postkit_check.py needs only the standard library; termgif.py and preview_cards.py also
+need Pillow (`pip install pillow`). Before publishing, the guarded lines of each script were
 mutated one at a time in a sandbox copy and the self-test was confirmed to go red on the named
 assertion, without a traceback; the unmutated control stayed green.
 
