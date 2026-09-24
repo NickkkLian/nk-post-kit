@@ -26,6 +26,14 @@ The full procedure, the boundaries and where the rules came from are in [SKILL.m
 5. Look at the cards before the gate
 6. Gate the kit
 
+## Why it is built this way
+
+**The idea.** A post about something you built is believed for the same reason the thing is: the claims can be checked. The failure mode is not bad writing; it is a number nobody measured, a "used by" nobody counted, or an incident retold so smoothly that it no longer matches what happened.
+
+**Where it came from.** Own practice, 2026-09: writing launch material for a batch of open-source skills, where the first drafts included a number from a design doc instead of the measured log, a before/after GIF whose "after" was an echo of a verdict rather than the tool's output, and a private project name in a gate's own source. Each of those is now a gate rule or a procedure step.
+
+**Evidence.** What was broken on purpose to show that the self-tests can fail is under [Verify](#verify); what was run end to end, and in which agent, is under [Compatibility](#compatibility).
+
 ## Install
 
 Pick one of four ways: three for Claude Code, one for OpenAI Codex. Skills load when a session starts, so open a **new** session after installing.

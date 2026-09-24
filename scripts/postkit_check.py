@@ -2,22 +2,22 @@
 """postkit_check.py — gate for a six-piece post kit before a person publishes it by hand.
 
     python3 postkit_check.py <project-dir> [<project-dir> ...] [--link REGEX] [--private-words FILE] [--x-only]
-        --x-only: this release posts the X thread and its media only (the owner's Friday slots), so the rules
+        --x-only: for a release that posts only the X thread and its media, the rules
         about pieces that stay unpublished — P3 build-log, P4 xiaohongshu, P7 video length, P9 story-source
         section — are printed as notes instead of findings. Everything else still blocks.
     python3 postkit_check.py --selftest
 
 Checks: P1 the six pieces + story-source.md + gif-run.txt present · P2 x-post ≤ 280 characters, ≤ 2 hashtags, contains a
 link matching --link (default: any http(s) or github.com link) · P3 long post 400–800 words · P4 the Chinese version
-(xiaohongshu.md): cover line ≤ 16 characters; body 300–900 Chinese characters (900 is a ceiling — ask before going
-over, and the room above the old 600 is for the things that must be said, not for narration); no WeChat/phone/
+(xiaohongshu.md): cover line ≤ 16 characters; body 300–900 Chinese characters (900 is a ceiling, and the room
+above 600 is for the things that must be said, not for narration); no WeChat/phone/
 e-mail; something concrete — a bullet or a code span — within the first 300 characters, so a reader sees what it
 does and what it looks like in ten seconds; and the must-say items (invented data, what was not tested, what the
 checker cannot see, a run that stopped on a limit, no baseline) gathered into one section a reader can skip to · P5 red lines in any
 piece: job-hunting words, marketing superlatives, local paths, and every word in --private-words (one per line; or
 $POSTKIT_PRIVATE_WORDS; or ~/.config/post-kit/private-words.txt — keep that file out of every repository) · P6 gif-run.txt
-ends with exit 0 · P7 video script's last timestamp between 5:00 and 10:00 · P8 none of the framings two audits
-caught on 2026-09-17: "thirteen of the fifteen" / "13 of 15" (two lists counted with different rulers stated as one
+ends with exit 0 · P7 video script's last timestamp between 5:00 and 10:00 · P8 none of these framings that read
+as facts and are not: "thirteen of the fifteen" / "13 of 15" (two lists counted with different rulers stated as one
 nested count), "四组"/"另有 N 行" beside a split that already accounts for every row, "machine checks" (a checker has
 rules; an acceptance list has checks) · P9 story-source.md has a section recording what the kit does
 not say — a heading like "Not claimed anywhere" or "Not used (could not be sourced, or not tested)" — and names
@@ -35,8 +35,8 @@ LOCAL = re.compile(r"\x2fUsers\x2f|~\x2fDesktop|[A-Za-z]:\x5cUsers\x5c")
 # 3-3/4-4 groups, with nothing that would make it a date or an amount on either side.
 CONTACT = re.compile(r"(?i)微信|wechat|vx[:：]|(?<![\d.\-/])(?:\+\d{1,3}[ -]?)?\d{3}[ -]?\d{3,4}[ -]?\d{4}(?![\d.\-/])|[\w.]+@[\w.]+\.\w+")
 CJK = re.compile(r"[一-鿿]")
-# P4's shape rules (owner's call, 2026-09-17): the extra length over the old 600 may only buy the things that must
-# be said, and they have to sit in one section a reader can skip to — not scattered through the post.
+# P4's shape rules: the length above 600 may only buy the things that must be said, and they have to sit in one
+# section a reader can skip to — not scattered through the post.
 ZH_BODY = ("\n它把红绿判定摆在第一屏。\n- 跑一次就看得见：`check.py` 直接给红或绿\n" + "正文" * 160 +
            "\n\n**两件实话**：数据是编的；有几处没测过；检查器只读文件、看不到屏幕。\n")
 def is_caveat_head(line):
@@ -55,7 +55,7 @@ CAVEATS = [re.compile(r"编的|假的|合成|synthetic"),          # the data is
            re.compile(r"看不到屏幕|只读文件|读的是.{0,12}结构"),  # the checker cannot see the screen
            re.compile(r"上限|没跑完|轮"),                     # the run stopped on a limit
            re.compile(r"基线|对照")]                          # no baseline run
-# Framings that read as facts and are not. Each was written by me and caught by an audit on 2026-09-17.
+# Framings that read as facts and are not. Each was once written by me and caught by an audit.
 BANNED = [("thirteen of the fifteen", "the checker's rules are not a subset of the acceptance list"),
           ("13 of 15", "same"),
           ("四组", "the rows with no amount live inside another group; a fourth count invites adding them twice"),
@@ -106,7 +106,7 @@ def check_kit(skill_dir, link=LINK, private=None, x_only=False):
         return open(p, encoding="utf-8", errors="replace").read() if os.path.isfile(p) else ""
     x = read("x-post.md").strip()
     if x:
-        # 2026-09-22, X playbook § 2.3: a root post with an external link gets no link preview and is carried
+        # a root post with an external link gets no link preview and is carried
         # further by replies than by the post itself, so the link belongs in the first reply. The file now holds
         # both: the root post, then a `## Reply 1` heading, then the reply.
         parts = re.split(r"^##\s*Reply 1\s*$", x, maxsplit=1, flags=re.M)
@@ -137,7 +137,7 @@ def check_kit(skill_dir, link=LINK, private=None, x_only=False):
         if cover and len(cover_text) > 16:
             out.append(("P4", "xiaohongshu.md", f"cover line {len(cover_text)} chars > 16"))
         body_cjk = len(CJK.findall(xh)) - len(CJK.findall(cover))
-        if not 300 <= body_cjk <= 900:                 # 900 is a hard ceiling: over it, ask before publishing
+        if not 300 <= body_cjk <= 900:                 # 900 is a hard ceiling
             out.append(("P4", "xiaohongshu.md", f"{body_cjk} Chinese chars in body, want 300–900"))
         if CONTACT.search(re.sub(r"github\.com/\S+", "", xh)):
             out.append(("P4", "xiaohongshu.md", "contact info (wechat/phone/e-mail) present"))
@@ -185,12 +185,11 @@ def check_kit(skill_dir, link=LINK, private=None, x_only=False):
             if f.split(".")[0].split("-")[0] not in ss:
                 out.append(("P9", "story-source.md", f"never says which claims {f} uses"))
     if x_only:
-        # 2026-09-22, the owner's schedule: the first batch's Friday slots post the X thread and its GIF, nothing
-        # else. The rules about pieces that stay unpublished become notes — the gate is not loosened: drop the flag
-        # and they go red again, which is what the selftest checks.
+        # a release that posts only the X thread and its GIF: the rules about pieces that stay unpublished become
+        # notes — the gate is not loosened: drop the flag and they go red again, which is what the selftest checks.
         for code, where, why in out:
             if code in X_ONLY_SKIPPED and not QUIET:
-                print(f"    · not posted this day, so not blocking: {code} {where}: {why}")
+                print(f"    · not posted in this release, so not blocking: {code} {where}: {why}")
         return [r for r in out if r[0] not in X_ONLY_SKIPPED]
     return out
 

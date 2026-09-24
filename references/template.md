@@ -1,13 +1,13 @@
 # The six pieces
 
 Red lines for all pieces: no job-hunting content; no private system details (project names, account
-matrices, local paths); no invented numbers; no superlatives; every piece is posted by a person.
+lists, local paths); no invented numbers; no superlatives; every piece is posted by a person.
 
 ## 1. x-post.md — X post (root ≤ 280 characters, **no link**) + a `## Reply 1` block
 Line 1 is one of four hook shapes — the **result**, a **contradiction**, a **surprising number**, or a
 **constraint** — never a label like "The idea:" or "Out:". Then the surprising middle, then the limit.
 The link, the licence and one "what I did not test" line go in `## Reply 1` (also ≤ 280): a root post with an
-external link gets no link preview and travels worse (X playbook § 2.3, 2026-09-22).
+external link gets no link preview and travels worse.
 Check: `postkit_check.py` P2 — root ≤ 280 with no link, Reply 1 present, ≤ 280, carrying the link.
 
 ## 2. build-log.md — long post (400–800 words)

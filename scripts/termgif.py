@@ -12,7 +12,7 @@ Cast format (one line = one event): "$ <command>" is typed character by characte
 title; "#pause: <seconds>" holds the frame; "#clear" clears the screen; any other line is printed as output.
 Colouring is automatic: lines containing ✘ / FAIL / RED / "exit=1" / "exit=2" are red, ✔ / PASS / GREEN / "exit=0"
 are green, "$ " prompts are white on the prompt glyph, comments starting with "#" are grey.
-Requires Pillow (the only non-stdlib dependency in this lab) and a monospace TrueType font (Menlo / DejaVu Sans Mono / Consolas).
+Requires Pillow (the only dependency outside Python's standard library) and a monospace TrueType font (Menlo / DejaVu Sans Mono / Consolas).
 """
 import os, re, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont

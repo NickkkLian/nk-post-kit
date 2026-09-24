@@ -20,7 +20,7 @@ The leading block of `#` lines in a source file is the kit's own note to the per
 post; it is stripped, exactly as the gate strips it. Nothing is truncated: text over its budget is drawn in
 full with the overrun marked, so the person can see how much has to go.
 
-The cards use the v4 "Monet" colours (dark: the dusk band; light: the water-lily canvas). Latin text, labels and
+The cards use the "Monet" colours (dark: the dusk band; light: the water-lily canvas). Latin text, labels and
 numbers are drawn with the fonts in ../assets/fonts (Inter, Space Mono, and Fraunces for Latin in the cover line),
 so they look the same on every machine; Chinese comes from the machine: a sans for the body, a bold serif for the
 cover line when one is installed (Songti SC on macOS), the body face when not.
@@ -38,7 +38,7 @@ from postkit_check import cover_of   # one definition of what the cover line is;
 
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "assets", "fonts")   # see SOURCES.md there
 
-# The v4 "Monet" colours: dark is the dusk band, light is the water-lily canvas. Every text colour clears 4.5:1 on
+# The "Monet" colours: dark is the dusk band, light is the water-lily canvas. Every text colour clears 4.5:1 on
 # its card and the accent bar clears 3:1; the selftest measures both.
 SCHEMES = {                                             # bg, fg, dim, rule, accent, red
     "dark":  ((0x16, 0x34, 0x37), (0xec, 0xe5, 0xde), (0xaf, 0xa6, 0x9d), (0x39, 0x54, 0x56), (0xf8, 0xa1, 0xb3), (0xeb, 0x8b, 0x75)),
@@ -570,7 +570,7 @@ def selftest():
                 check("light and dark cards differ", a.getpixel((5, 5)) != b.getpixel((5, 5)), f"{a.getpixel((5, 5))} vs {b.getpixel((5, 5))}")
                 # written out here, not read from SCHEMES: a check that takes its answer from the table it checks
                 # agrees with any change to that table
-                check("the covers sit on the v4 canvas and dusk band",
+                check("the covers sit on the water-lily canvas and the dusk band",
                       a.getpixel((5, 5)) == (0xf7, 0xe9, 0xe8) and b.getpixel((5, 5)) == (0x16, 0x34, 0x37),
                       f"{a.getpixel((5, 5))} / {b.getpixel((5, 5))}")
 
