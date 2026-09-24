@@ -1,5 +1,7 @@
 # nk-post-kit
 
+![nk-post-kit](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-post-kit.png)
+
 An agent skill for [Claude Code](https://code.claude.com) and [OpenAI Codex](https://developers.openai.com/codex). Turn a finished repository, tool or skill into a set of posts a person publishes by hand — a short X post, a 400–800 word build log, a 5–10 minute video script, a 60–90 second vertical cut, a GIF recording script, and a Chinese Xiaohongshu version — every claim traced to a file or a real run, with a gate that blocks invented numbers, superlatives, private names and contact details.
 
 Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — skills that stop an AI coding agent's
