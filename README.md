@@ -1,8 +1,49 @@
 # nk-post-kit
 
-![nk-post-kit](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-post-kit.png)
+An agent skill for [Claude Code](https://code.claude.com) and [OpenAI Codex](https://developers.openai.com/codex). Turn a finished repository into six drafts a person publishes by hand (an X post, a build log, a video script, a vertical cut, a GIF script and a Chinese Xiaohongshu version), with every claim traced to a file or a real run.
 
-An agent skill for [Claude Code](https://code.claude.com) and [OpenAI Codex](https://developers.openai.com/codex). Turn a finished repository, tool or skill into a set of posts a person publishes by hand — a short X post, a 400–800 word build log, a 5–10 minute video script, a 60–90 second vertical cut, a GIF recording script, and a Chinese Xiaohongshu version — every claim traced to a file or a real run, with a gate that blocks invented numbers, superlatives, private names and contact details.
+> **What this is, and is not.** It is the author's own launch routine, packaged: six drafts and a gate that checks their
+> shape. One of the six is a Chinese Xiaohongshu version (`--x-only` checks the X post alone). From this skill's own Limits:
+> "The gate checks shape and red-line words; it cannot tell whether a sentence is true." It does not post anything, and no
+> example kit ships in this repository, so the command below shows the GIF renderer, not the gate on a full kit.
+
+## Try it
+
+Nothing is installed and nothing under `~/.claude` changes: clone, run the self-tests, run the example. It writes only `demo*` files inside the clone.
+
+```bash
+git clone https://github.com/NickkkLian/nk-post-kit && cd nk-post-kit
+python3 scripts/postkit_check.py --selftest
+python3 scripts/preview_cards.py --selftest
+python3 scripts/termgif.py --selftest
+printf '#title: demo\n$ echo a cast is a text file\na cast is a text file\n' > demo.cast
+python3 scripts/termgif.py demo.cast --out demo.gif --png demo.png
+```
+
+Each self-test ends on its own line:
+
+```text
+postkit_check selftest · 30/30 passed
+selftest: 42/42 passed
+termgif selftest · 9/9 passed
+```
+
+The example commands print this (recorded in a fresh copy with an empty home folder; the path of the clone is taken out):
+
+```text
+$ python3 scripts/termgif.py demo.cast --out demo.gif --png demo.png
+demo.gif: 12 frames, 3.5 s, 16 KB; demo.png
+```
+
+`demo.gif` and `demo.png` are a three-line terminal session drawn as a GIF and a poster. `termgif.py` and `preview_cards.py` need Pillow; `postkit_check.py` needs only the standard library.
+
+### What to type
+
+With the skill installed ([Install](#install)), ask in plain words. This is the request a recorded test run used; it never names the skill:
+
+> I finished the little tool in this folder and I want to post about it this week. Put together what I would need to publish by hand — something short for X, a longer write-up, a script if I record a video, and a Chinese version — and tell me anything in it you cannot back up with a file here.
+
+![nk-post-kit](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-post-kit.png)
 
 Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — skills that stop an AI coding agent's
 "done, tested, safe" from being taken on faith.
@@ -19,12 +60,13 @@ The full procedure, the boundaries and where the rules came from are in [SKILL.m
 
 ## How it works
 
-1. Collect the sources first
-2. Record a real run
-3. Write the six pieces
-4. Render the GIF without recording
-5. Look at the cards before the gate
-6. Gate the kit
+1. Collect the sources first into `post-kit/story-source.md`: one line per claim you intend to make, with the file or command output it comes from.
+2. Record a real run that shows before and after: write `post-kit/gif-script.sh`.
+3. Write the six pieces from `references/template.md`.
+4. Render the GIF without recording: turn the run into a cast (`$ command` lines are typed, other lines printed, `#pause: s`, `#title: …`) and run `python3 scripts/termgif.py demo.cast --out demo.gif --png poster.png --cols 88 --rows 18`.
+5. Look at the cards before the gate: `python3 scripts/preview_cards.py . --out post-kit/preview` draws the root post and the reply with their character counts, the cover line at cover size, and the body paginated over 3:4 cards.
+6. Gate the kit: `python3 scripts/postkit_check.py . --private-words ~/.config/post-kit/private-words.txt`.
+7. A person publishes. The skill drafts and checks; posting stays a human action.
 
 ## Why it is built this way
 
