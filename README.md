@@ -2,31 +2,23 @@
 
 An agent skill for [Claude Code](https://code.claude.com) and [OpenAI Codex](https://developers.openai.com/codex). Turn a finished repository into six drafts a person publishes by hand (an X post, a build log, a video script, a vertical cut, a GIF script and a Chinese Xiaohongshu version), with every claim traced to a file or a real run.
 
-> **What this is, and is not.** It is the author's own launch routine, packaged: six drafts and a gate that checks their
-> shape. One of the six is a Chinese Xiaohongshu version (`--x-only` checks the X post alone). From this skill's own Limits:
-> "The gate checks shape and red-line words; it cannot tell whether a sentence is true." It does not post anything, and no
-> example kit ships in this repository, so the command below shows the GIF renderer, not the gate on a full kit.
+**What you get:** the six drafts with a sources file behind every claim, a before/after GIF drawn from a real run without screen recording, and preview cards that show each post with its character count before it goes out.
+
+![nk-post-kit demo: before and after](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/nk-post-kit.gif)
+
+Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills): 14 agent skills that work with numbers, check an agent's work, guard a repository, and write and present.
 
 ## Try it
 
-Nothing is installed and nothing under `~/.claude` changes: clone, run the self-tests, run the example. It writes only `demo*` files inside the clone.
+Clone and run the example, which draws a three-line terminal session as a GIF:
 
 ```bash
 git clone https://github.com/NickkkLian/nk-post-kit && cd nk-post-kit
-python3 scripts/postkit_check.py --selftest
-python3 scripts/preview_cards.py --selftest
-python3 scripts/termgif.py --selftest
 printf '#title: demo\n$ echo a cast is a text file\na cast is a text file\n' > demo.cast
 python3 scripts/termgif.py demo.cast --out demo.gif --png demo.png
 ```
 
-Each self-test ends on its own line:
-
-```text
-postkit_check selftest · 30/30 passed
-selftest: 42/42 passed
-termgif selftest · 9/9 passed
-```
+None of this installs anything or changes `~/.claude`; it writes only `demo*` files inside the clone.
 
 The example commands print this (recorded in a fresh copy with an empty home folder; the path of the clone is taken out):
 
@@ -37,6 +29,8 @@ demo.gif: 12 frames, 3.5 s, 16 KB; demo.png
 
 `demo.gif` and `demo.png` are a three-line terminal session drawn as a GIF and a poster. `termgif.py` and `preview_cards.py` need Pillow; `postkit_check.py` needs only the standard library.
 
+No example kit ships in this repository, so this example shows the GIF renderer, not the gate on a full kit.
+
 ### What to type
 
 With the skill installed ([Install](#install)), ask in plain words. This is the request a recorded test run used; it never names the skill:
@@ -44,11 +38,6 @@ With the skill installed ([Install](#install)), ask in plain words. This is the 
 > I finished the little tool in this folder and I want to post about it this week. Put together what I would need to publish by hand — something short for X, a longer write-up, a script if I record a video, and a Chinese version — and tell me anything in it you cannot back up with a file here.
 
 ![nk-post-kit](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-post-kit.png)
-
-Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — skills that stop an AI coding agent's
-"done, tested, safe" from being taken on faith.
-
-![nk-post-kit demo: before and after](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/nk-post-kit.gif)
 
 ## What it does
 
@@ -155,12 +144,22 @@ python3 scripts/preview_cards.py --selftest
 python3 scripts/termgif.py --selftest
 ```
 
+Each self-test ends on its own line:
+
+```text
+postkit_check selftest · 30/30 passed
+selftest: 42/42 passed
+termgif selftest · 9/9 passed
+```
+
 Python 3.9+. postkit_check.py needs only the standard library; termgif.py and preview_cards.py also
 need Pillow (`pip install pillow`). Before publishing, the guarded lines of each script were
 mutated one at a time in a sandbox copy and the self-test was confirmed to go red on the named
 assertion, without a traceback; the unmutated control stayed green.
 
 ## Limits
+
+**What this is, and is not.** It is the author's own launch routine, packaged: six drafts and a gate that checks their shape. One of the six is a Chinese Xiaohongshu version (`--x-only` checks the X post alone). It does not post anything, and no example kit ships in this repository, so the example under [Try it](#try-it) shows the GIF renderer, not the gate on a full kit.
 
 - The gate checks shape and red-line words; it cannot tell whether a sentence is true. The story-source file and a reviewer are for that.
 - termgif renders text frames; it does not capture real GUIs. For interface demos, record the screen and convert with ffmpeg.
