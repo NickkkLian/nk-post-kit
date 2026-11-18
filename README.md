@@ -27,7 +27,7 @@ $ python3 scripts/termgif.py demo.cast --out demo.gif --png demo.png
 demo.gif: 12 frames, 3.5 s, 16 KB; demo.png
 ```
 
-`demo.gif` and `demo.png` are a three-line terminal session drawn as a GIF and a poster. `termgif.py` and `preview_cards.py` need Pillow; `postkit_check.py` needs only the standard library.
+`termgif.py` and `preview_cards.py` need Pillow (`pip install pillow`); `postkit_check.py` needs only the standard library.
 
 No example kit ships in this repository, so this example shows the GIF renderer, not the gate on a full kit.
 
@@ -62,8 +62,6 @@ The full procedure, the boundaries and where the rules came from are in [SKILL.m
 **The idea.** A post about something you built is believed for the same reason the thing is: the claims can be checked. The failure mode is not bad writing; it is a number nobody measured, a "used by" nobody counted, or an incident retold so smoothly that it no longer matches what happened.
 
 **Where it came from.** Own practice, 2026-09: writing launch material for a batch of open-source skills, where the first drafts included a number from a design doc instead of the measured log, a before/after GIF whose "after" was an echo of a verdict rather than the tool's output, and a private project name in a gate's own source. Each of those is now a gate rule or a procedure step.
-
-**Evidence.** What was broken on purpose to show that the self-tests can fail is under [Verify](#verify); what was run end to end, and in which agent, is under [Compatibility](#compatibility).
 
 ## Install
 
@@ -100,7 +98,7 @@ Without opening a session, the same two steps work from a shell: `claude plugin 
 
 <img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/panel-route.gif" alt="Adding the marketplace and installing a skill in the desktop app" width="640">
 
-<sub>Recorded on 2026-09-16, when the marketplace listed ten skills, all at version 0.1.0; it lists more now. The repository list in this recording shows the recorder's own repositories because a GitHub account is connected; yours will show yours. Type the full name as in step 4.</sub>
+<sub>Recorded on 2026-09-16, when the marketplace listed ten skills; it lists more now. The repository list will show your own repositories.</sub>
 
 1. In the chat box, type `/plugin marketplace` and press Enter (or open **Settings → Customize → Plugins**). The **Plugins** panel opens.
    <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step1-type-plugin-marketplace.png" alt="/plugin marketplace typed in the chat box" width="480">
@@ -130,8 +128,8 @@ git clone https://github.com/NickkkLian/nk-post-kit.git ~/.agents/skills/nk-post
 
 | Agent | Tested | What was checked |
 |---|---|---|
-| Claude Code (CLI 2.1.173, macOS) | partly | In a fresh project with an isolated Claude config, inside a macOS sandbox that blocked reading the tester's ~/.claude folder (settings, session history, memory), Desktop, Documents and Downloads, SSH keys and git identity, a plain request that never names the skill triggered it and it ran its bundled script. The route 2 plugin commands were also run from a shell with an isolated config: marketplace add, install, list. Two runs, both recorded. With a 14-turn limit the session loaded the skill, read the tool, re-ran its self-test to check the evidence files were true, and ran out of turns before writing anything — the limit had been copied from another skill instead of estimated from eight output files. With 26 turns it wrote all six pieces plus the sources file, wrote and ran its own gif-script.sh, rendered the GIF, drew the preview cards, and used them to catch its own root post at 11 characters over 280 and trim it — then hit the limit before running scripts/postkit_check.py. Gated here afterwards, that kit reports 8 findings (the reply carries a placeholder instead of a link, because the sample folder has no repository URL, and the Chinese piece and the sources file are missing the sections the newer P4 and P9 rules ask for). |
-| OpenAI Codex CLI (0.155.0-alpha.9.2, gpt-5.6-sol, low reasoning, macOS) | yes | Copied into `~/.agents/skills` of a temporary home, in a fresh project, without the user's Codex config. From a plain request that never names the skill, Codex read SKILL.md and the template, verified the sample tool by re-running it, wrote and ran its own gif-script.sh, wrote the six pieces and the sources file, and ran scripts/postkit_check.py itself: 0 findings, re-checked here against the kept files. It left `REPLACE-WITH-REPOSITORY-URL` in the reply rather than inventing a link. One environment note, not a skill problem: the default python3 on that machine had a Pillow built for the other architecture, so `from PIL import Image` failed; Codex diagnosed it and re-ran the two renderers under `arch -x86_64`. The gate needs no Pillow at all. |
+| Claude Code (CLI 2.1.173, macOS) | partly | In a fresh project with an isolated Claude config, inside a macOS sandbox that blocked reading the tester's ~/.claude folder (settings, session history, memory), Desktop, Documents and Downloads, SSH keys and git identity, a plain request that never names the skill triggered it and it ran its bundled script. The route 2 plugin commands were also run from a shell with an isolated config: marketplace add, install, list. Two runs, both recorded. With a 14-turn limit the session loaded the skill, read the tool, re-ran its self-test to check the evidence files were true, and ran out of turns before writing anything. With 26 turns it wrote all six pieces plus the sources file, wrote and ran its own gif-script.sh, rendered the GIF, drew the preview cards, and used them to catch its own root post at 11 characters over 280 and trim it — then hit the limit before running scripts/postkit_check.py. Gated here afterwards, that kit reports 8 findings (the reply carries a placeholder instead of a link, because the sample folder has no repository URL, and the Chinese piece and the sources file are missing the sections the newer P4 and P9 rules ask for). |
+| OpenAI Codex CLI (0.155.0-alpha.9.2, gpt-5.6-sol, low reasoning, macOS) | yes | Copied into `~/.agents/skills` of a temporary home, in a fresh project, without the user's Codex config. From a plain request that never names the skill, Codex read SKILL.md and the template, verified the sample tool by re-running it, wrote and ran its own gif-script.sh, wrote the six pieces and the sources file, and ran scripts/postkit_check.py itself: 0 findings, re-checked here against the kept files. It left `REPLACE-WITH-REPOSITORY-URL` in the reply rather than inventing a link. One environment note, not a skill problem: the default python3 on that machine had a Pillow built for the other architecture, so `from PIL import Image` failed; Codex diagnosed it and re-ran the two renderers under `arch -x86_64`. |
 | Cursor, Gemini CLI | no | Not tested. Their documentation says both read `~/.agents/skills`, the folder route 4 clones into; Gemini CLI asks before it activates a skill. |
 
 Route 4 was checked for this repository: cloned from GitHub into a temporary home's `~/.agents/skills`, it was listed by the step 3 command. This skill's frontmatter uses only name, description, license, compatibility and metadata.
@@ -152,14 +150,13 @@ selftest: 42/42 passed
 termgif selftest · 9/9 passed
 ```
 
-Python 3.9+. postkit_check.py needs only the standard library; termgif.py and preview_cards.py also
-need Pillow (`pip install pillow`). Before publishing, the guarded lines of each script were
+Python 3.9+. Before publishing, the guarded lines of each script were
 mutated one at a time in a sandbox copy and the self-test was confirmed to go red on the named
 assertion, without a traceback; the unmutated control stayed green.
 
 ## Limits
 
-**What this is, and is not.** It is the author's own launch routine, packaged: six drafts and a gate that checks their shape. One of the six is a Chinese Xiaohongshu version (`--x-only` checks the X post alone). It does not post anything, and no example kit ships in this repository, so the example under [Try it](#try-it) shows the GIF renderer, not the gate on a full kit.
+**What this is, and is not.** It does not post anything. One of the six drafts is a Chinese Xiaohongshu version (`--x-only` checks the X post alone).
 
 - The gate checks shape and red-line words; it cannot tell whether a sentence is true. The story-source file and a reviewer are for that.
 - termgif renders text frames; it does not capture real GUIs. For interface demos, record the screen and convert with ffmpeg.
